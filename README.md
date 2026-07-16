@@ -1,5 +1,7 @@
 # Aegis — AI-Agent Guardrail Layer
 
+[![CI](https://github.com/SGourish762/aegis/actions/workflows/ci.yml/badge.svg)](https://github.com/SGourish762/aegis/actions/workflows/ci.yml)
+
 Aegis is a security layer that wraps LLM agents. It screens inputs for
 prompt-injection / jailbreak attacks, enforces action-level policy on what an
 agent is allowed to do, and produces an audit log of every decision.
@@ -27,8 +29,25 @@ This repo is being built incrementally, phase by phase. Current state:
 - [x] **Phase 4 — Evaluation harness**: `python eval/run_eval.py` scores the
       detection engine against a public, labeled attack/benign corpus and
       reports precision/recall/F1/false-positive rate. See results below.
-- [ ] Phase 5 — CI + deploy (Render / Vercel)
+- [x] **Phase 5 — CI**: GitHub Actions runs `pytest`, the eval harness,
+      and the frontend lint/build on every push (see badge above).
+      Deploy configs (`backend/render.yaml`, `frontend/vercel.json`) are
+      included; see [Deploying](#deploying) for the manual connect step.
 - [ ] Phase 6 (optional) — free-tier LLM second opinion
+
+## Architecture
+
+```mermaid
+flowchart LR
+    U[Client / demo agent] -->|"POST /screen"| API[FastAPI app]
+    U -->|"POST /agent/run"| API
+    API --> DET[Detection engine\nrules + heuristics]
+    API --> POL[Policy engine\ndeny-by-default]
+    DET --> AUD[(Audit store\nSQLite / Postgres)]
+    POL --> AUD
+    API -->|"GET /audit, /stats"| FE[React dashboard]
+    AUD --> API
+```
 
 ## How detection works
 
@@ -193,13 +212,37 @@ npm run dev
 Set `VITE_API_URL` (see [frontend/.env.example](frontend/.env.example)) to
 point at a different backend origin, e.g. a deployed Render URL.
 
+## Deploying
+
+Both host free tiers deploy straight from this repo — no code changes needed,
+just connecting the account:
+
+**Backend (Render):**
+1. New → Web Service → connect this repo. Render reads
+   [`backend/render.yaml`](backend/render.yaml) automatically (root dir
+   `backend`, build `pip install -r requirements.txt`, start
+   `uvicorn app.main:app --host 0.0.0.0 --port $PORT`).
+2. Set `LLM_API_KEY` (optional) and `DB_URL` (optional — defaults to a local
+   SQLite file, which is fine for a demo; use Render's free Postgres for
+   anything persistent) in the dashboard's environment tab.
+
+**Frontend (Vercel):**
+1. New Project → import this repo → set the root directory to `frontend`.
+   Vercel reads [`frontend/vercel.json`](frontend/vercel.json) (Vite preset,
+   build `npm run build`, output `dist`).
+2. Set `VITE_API_URL` to the Render backend's public URL.
+
+After both are live, add the Vercel origin to the backend's CORS allowlist
+(`backend/app/main.py`, currently `allow_origins=["*"]` for local dev) if you
+want to lock it down.
+
 ## Tech stack
 
 - Backend: Python + FastAPI + Pydantic, `pytest`
 - Frontend: React + TypeScript + Vite, recharts for the dashboard charts
 - DB: SQLite (dev) / Postgres (prod)
-- CI (Phase 5+): GitHub Actions
-- Deploy (Phase 5+): Render (backend), Vercel (frontend)
+- CI: GitHub Actions (`.github/workflows/ci.yml`)
+- Deploy: Render (backend), Vercel (frontend)
 
 ## License
 
