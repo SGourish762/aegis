@@ -17,7 +17,9 @@ This repo is being built incrementally, phase by phase. Current state:
 - [x] **Phase 1 — Detection engine**: `POST /screen` returns an allow/flag/block
       verdict for arbitrary text, using signature rules + scoring heuristics.
       No LLM, no DB, no env vars required.
-- [ ] Phase 2 — Action-level policy enforcement for a demo agent
+- [x] **Phase 2 — Action-level policy enforcement**: `POST /agent/run` runs a
+      scripted demo agent that proposes tool calls, then filters every action
+      through a deny-by-default policy engine (`backend/app/policy/`).
 - [ ] Phase 3 — Audit logging + live dashboard
 - [ ] Phase 4 — Evaluation harness against a public attack corpus
 - [ ] Phase 5 — CI + deploy (Render / Vercel)
@@ -62,6 +64,42 @@ Response:
     "Attempts to override prior instructions",
     "Requests disclosure of the system prompt",
     "High density of imperative/override verbs (2 in 9 words)"
+  ]
+}
+```
+
+### `POST /agent/run`
+
+Runs a small scripted demo agent (`backend/app/agent/demo_agent.py`) against a
+task, then filters every proposed tool call through the policy engine
+(`backend/app/policy/`). The demo agent is intentionally not LLM-backed — it's
+a keyword-triggered stub that turns a task description into a sequence of
+tool calls, which keeps the demo free and deterministic while still
+exercising the thing Aegis actually protects: a stream of proposed actions
+that must clear policy before they run.
+
+Fixed toolset: `read_file`, `write_file`, `delete_file`, `http_get`,
+`run_shell`, `send_email`. Policy is deny-by-default: unknown tools are
+denied, `delete_file` and `run_shell` are always denied, and `http_get` /
+`send_email` are only allowed against an explicit domain allowlist
+(`backend/app/policy/policies.py`).
+
+Request:
+```json
+{ "task": "Please delete the file called secrets.txt" }
+```
+
+Response:
+```json
+{
+  "task": "Please delete the file called secrets.txt",
+  "proposed_actions": [{ "tool": "delete_file", "params": { "path": "secrets.txt" } }],
+  "results": [
+    {
+      "action": { "tool": "delete_file", "params": { "path": "secrets.txt" } },
+      "decision": "deny",
+      "reason": "delete_file is always denied by default policy"
+    }
   ]
 }
 ```
