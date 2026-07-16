@@ -20,7 +20,10 @@ This repo is being built incrementally, phase by phase. Current state:
 - [x] **Phase 2 — Action-level policy enforcement**: `POST /agent/run` runs a
       scripted demo agent that proposes tool calls, then filters every action
       through a deny-by-default policy engine (`backend/app/policy/`).
-- [ ] Phase 3 — Audit logging + live dashboard
+- [x] **Phase 3 — Audit logging + dashboard**: every `/screen` and
+      `/agent/run` call is persisted (`backend/app/audit/`) and exposed via
+      `GET /audit`, `GET /audit/{id}`, `GET /stats`. A React/TypeScript
+      frontend (`frontend/`) provides a live tester, dashboard, and audit table.
 - [ ] Phase 4 — Evaluation harness against a public attack corpus
 - [ ] Phase 5 — CI + deploy (Render / Vercel)
 - [ ] Phase 6 (optional) — free-tier LLM second opinion
@@ -104,6 +107,18 @@ Response:
 }
 ```
 
+### Audit + stats
+
+- `GET /audit?kind=&verdict=&category=&limit=&offset=` — paginated audit log.
+- `GET /audit/{id}` — full detail for one record, including the original
+  `ScreenResponse`/`AgentRunResponse` payload.
+- `GET /stats` — totals, block rate, verdict/category breakdowns, and a daily
+  time series, for the dashboard.
+
+Every `/screen` and `/agent/run` call is recorded automatically
+(`backend/app/audit/store.py`) — DB-agnostic behind `DB_URL` (SQLite locally,
+Postgres in prod).
+
 ## Local setup
 
 ```bash
@@ -123,11 +138,23 @@ uvicorn app.main:app --reload
 No environment variables are required. See [.env.example](.env.example) for
 optional configuration (LLM second opinion, DB URL, thresholds).
 
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+# -> http://127.0.0.1:5173, talking to the backend at http://127.0.0.1:8000
+```
+
+Set `VITE_API_URL` (see [frontend/.env.example](frontend/.env.example)) to
+point at a different backend origin, e.g. a deployed Render URL.
+
 ## Tech stack
 
 - Backend: Python + FastAPI + Pydantic, `pytest`
-- Frontend (Phase 3+): React + TypeScript + Vite
-- DB (Phase 3+): SQLite (dev) / Postgres (prod)
+- Frontend: React + TypeScript + Vite, recharts for the dashboard charts
+- DB: SQLite (dev) / Postgres (prod)
 - CI (Phase 5+): GitHub Actions
 - Deploy (Phase 5+): Render (backend), Vercel (frontend)
 
