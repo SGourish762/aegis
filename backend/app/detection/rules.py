@@ -57,6 +57,20 @@ RULES: list[Rule] = [
         "Introduces alternate instructions",
     ),
     _rule(
+        "forget_previous_task",
+        INSTRUCTION_OVERRIDE,
+        r"\b(forget|ignore|disregard|leave behind|remove|drop)\b[^.\n]{0,40}\b(previous|prior|above|earlier|all)\b[^.\n]{0,40}\b(tasks?|assignments?|information)\b",
+        0.75,
+        "Attempts to discard prior task context in favor of a new one",
+    ),
+    _rule(
+        "new_task_follows",
+        INSTRUCTION_OVERRIDE,
+        r"\bnew\s+(tasks?|instructions?)\s+(now\s+)?follow\b",
+        0.5,
+        "Announces a new task/instruction sequence, a common override pivot",
+    ),
+    _rule(
         "from_now_on",
         INSTRUCTION_OVERRIDE,
         r"\bfrom now on\b.{0,60}\b(you (will|must|shall)|act as|respond)\b",

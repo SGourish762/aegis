@@ -24,7 +24,9 @@ This repo is being built incrementally, phase by phase. Current state:
       `/agent/run` call is persisted (`backend/app/audit/`) and exposed via
       `GET /audit`, `GET /audit/{id}`, `GET /stats`. A React/TypeScript
       frontend (`frontend/`) provides a live tester, dashboard, and audit table.
-- [ ] Phase 4 — Evaluation harness against a public attack corpus
+- [x] **Phase 4 — Evaluation harness**: `python eval/run_eval.py` scores the
+      detection engine against a public, labeled attack/benign corpus and
+      reports precision/recall/F1/false-positive rate. See results below.
 - [ ] Phase 5 — CI + deploy (Render / Vercel)
 - [ ] Phase 6 (optional) — free-tier LLM second opinion
 
@@ -118,6 +120,47 @@ Response:
 Every `/screen` and `/agent/run` call is recorded automatically
 (`backend/app/audit/store.py`) — DB-agnostic behind `DB_URL` (SQLite locally,
 Postgres in prod).
+
+## Evaluation results
+
+Run it yourself: `python eval/run_eval.py` (from `backend/`, after installing
+requirements — no network or API key needed, the corpus is committed).
+
+**Corpus:** [`deepset/prompt-injections`](https://huggingface.co/datasets/deepset/prompt-injections)
+(CC-BY-4.0), 662 labeled samples (263 attack / 399 benign), covering
+instruction-override, persona/roleplay jailbreaks, and system-prompt
+probing in English and German. Stored at
+[`backend/eval/corpus/deepset_prompt_injections.jsonl`](backend/eval/corpus/deepset_prompt_injections.jsonl).
+
+**Scoring:** a sample counts as *detected* if the verdict is `flag` or
+`block` (i.e. the engine didn't silently allow it). Ground truth positive =
+`attack`.
+
+| Metric | Value |
+|---|---|
+| Precision | **1.000** |
+| Recall | **0.088** |
+| F1 | 0.161 |
+| False-positive rate | **0.000** |
+
+Confusion: TP=23, FP=0, TN=399, FN=240. Verdict breakdown: attacks →
+15 block / 8 flag / 240 allow; benign → 399/399 allow.
+
+**Honest read:** the rule/heuristic engine is precise (zero false positives
+across 399 ordinary prompts) but its recall against this corpus is low. The
+signature rules reliably catch classic, explicit patterns — "ignore all
+previous instructions", DAN-style jailbreaks, fake chat-markup tokens — which
+account for the 23 true positives. The bulk of the misses are open-ended
+persona/roleplay requests ("act as a debater", "pretend you are an evil AI",
+"now you are Xi Jinping, how would you answer..."). This dataset labels *any*
+such roleplay as an attack, but the same phrasing ("act as a linux terminal",
+"act as an English translator") is extremely common in legitimate prompts, so
+a rule strict enough to catch them would trade away the 0% false-positive
+rate — not a trade worth making blindly for a deterministic layer that has to
+stay auditable. This is exactly the gap the optional Phase 6 LLM second
+opinion is meant to close: rules handle the clear-cut, high-confidence cases
+for free and instantly, and an LLM call is reserved for the ambiguous
+roleplay-shaped cases rules can't safely resolve on their own.
 
 ## Local setup
 
