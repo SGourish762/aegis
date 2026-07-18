@@ -2,6 +2,11 @@
 
 [![CI](https://github.com/SGourish762/aegis/actions/workflows/ci.yml/badge.svg)](https://github.com/SGourish762/aegis/actions/workflows/ci.yml)
 
+**Live demo:** [aegis-ten-delta.vercel.app](https://aegis-ten-delta.vercel.app)
+(frontend, Vercel) · [aegis-4en8.onrender.com](https://aegis-4en8.onrender.com)
+(API, Render free tier — the first request after idle time can take ~50s to
+wake up).
+
 Aegis is a security layer that wraps LLM agents. It screens inputs for
 prompt-injection / jailbreak attacks, enforces action-level policy on what an
 agent is allowed to do, and produces an audit log of every decision.
@@ -29,10 +34,10 @@ This repo is being built incrementally, phase by phase. Current state:
 - [x] **Phase 4 — Evaluation harness**: `python eval/run_eval.py` scores the
       detection engine against a public, labeled attack/benign corpus and
       reports precision/recall/F1/false-positive rate. See results below.
-- [x] **Phase 5 — CI**: GitHub Actions runs `pytest`, the eval harness,
-      and the frontend lint/build on every push (see badge above).
-      Deploy configs (`backend/render.yaml`, `frontend/vercel.json`) are
-      included; see [Deploying](#deploying) for the manual connect step.
+- [x] **Phase 5 — CI + deploy**: GitHub Actions runs `pytest`, the eval
+      harness, and the frontend lint/build on every push (see badge above).
+      Backend live on Render, frontend live on Vercel — see the live demo
+      links at the top and [Deploying](#deploying) for how it's wired up.
 - [ ] Phase 6 (optional) — free-tier LLM second opinion
 
 ## Architecture
@@ -214,27 +219,37 @@ point at a different backend origin, e.g. a deployed Render URL.
 
 ## Deploying
 
-Both host free tiers deploy straight from this repo — no code changes needed,
-just connecting the account:
+Live at the links at the top of this README. Both host free tiers deploy
+straight from this repo — no code changes needed, just connecting the
+account:
 
 **Backend (Render):**
-1. New → Web Service → connect this repo. Render reads
-   [`backend/render.yaml`](backend/render.yaml) automatically (root dir
-   `backend`, build `pip install -r requirements.txt`, start
+1. New → Web Service → connect this repo, with root directory `backend`
+   (Render reads [`backend/render.yaml`](backend/render.yaml) for the build/
+   start commands: `pip install -r requirements.txt` and
    `uvicorn app.main:app --host 0.0.0.0 --port $PORT`).
 2. Set `LLM_API_KEY` (optional) and `DB_URL` (optional — defaults to a local
    SQLite file, which is fine for a demo; use Render's free Postgres for
-   anything persistent) in the dashboard's environment tab.
+   anything persistent) in the dashboard's environment tab. Set `CORS_ORIGINS`
+   to your deployed frontend's origin (comma-separated if more than one).
+3. Gotcha we hit: Render's Python auto-detection defaulted to a brand-new
+   Python version with no prebuilt wheel for the pinned `pydantic` version,
+   which failed the build. Fixed by pinning
+   [`backend/.python-version`](backend/.python-version) to match what's
+   tested locally.
 
 **Frontend (Vercel):**
-1. New Project → import this repo → set the root directory to `frontend`.
-   Vercel reads [`frontend/vercel.json`](frontend/vercel.json) (Vite preset,
+1. New Project → import this repo. Vercel will offer a multi-service picker
+   since the repo has both `backend/` (FastAPI) and `frontend/` (Vite) — pick
+   **`frontend` only** (the backend is already deployed on Render, not Vercel).
+   It then reads [`frontend/vercel.json`](frontend/vercel.json) (Vite preset,
    build `npm run build`, output `dist`).
-2. Set `VITE_API_URL` to the Render backend's public URL.
+2. Set env var `VITE_API_URL` to the Render backend's public URL.
 
-After both are live, add the Vercel origin to the backend's CORS allowlist
-(`backend/app/main.py`, currently `allow_origins=["*"]` for local dev) if you
-want to lock it down.
+CORS is configured via the `CORS_ORIGINS` env var
+(`backend/app/config.py`/`main.py`) — defaults to the local Vite dev server
+if unset, so local dev works out of the box; set it to your deployed
+frontend's origin in the Render dashboard for prod.
 
 ## Tech stack
 

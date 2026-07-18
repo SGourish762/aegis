@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent.demo_agent import propose_actions
 from app.audit import store as audit_store
+from app.config import CORS_ORIGINS
 from app.detection.engine import screen
 from app.policy.engine import evaluate_all
 from app.schemas import (
@@ -35,7 +36,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
