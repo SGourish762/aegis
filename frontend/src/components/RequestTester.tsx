@@ -2,21 +2,25 @@ import { useState } from "react";
 import { runAgent, screenText } from "../api";
 import type { AgentRunResponse, ScreenResponse } from "../types";
 
-const VERDICT_COLOR: Record<string, string> = {
-  allow: "#1a7f37",
-  flag: "#9a6700",
-  block: "#cf222e",
-  deny: "#cf222e",
-  mixed: "#9a6700",
+const VERDICT_VAR: Record<string, string> = {
+  allow: "ok",
+  flag: "warn",
+  block: "danger",
+  deny: "danger",
+  mixed: "warn",
 };
 
 function Badge({ label }: { label: string }) {
-  const color = VERDICT_COLOR[label] ?? "#57606a";
+  const key = VERDICT_VAR[label];
+  const style = key
+    ? {
+        backgroundColor: `var(--${key}-dim)`,
+        color: `var(--${key})`,
+        borderColor: `var(--${key})`,
+      }
+    : { backgroundColor: "var(--bg-raised)", color: "var(--muted)", borderColor: "var(--border)" };
   return (
-    <span
-      className="badge"
-      style={{ backgroundColor: `${color}1a`, color, borderColor: `${color}55` }}
-    >
+    <span className="badge" style={style}>
       {label}
     </span>
   );

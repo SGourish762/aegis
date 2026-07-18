@@ -17,6 +17,19 @@ with zero API keys. An LLM second opinion is available as an optional
 enrichment layer for ambiguous cases (see Phase 6 below), but the system never
 depends on it.
 
+## Content firewall: indirect prompt injection
+
+Most prompt-injection demos have you type an attack yourself. The scarier,
+less-solved version is **indirect injection**: an autonomous agent browses a
+webpage, reads a product review, or ingests search results — and hidden
+inside is an instruction meant for *the agent*, not the user. The live
+demo's "Content firewall" section makes this concrete: pick a page (a blog
+post, a product review, a forum reply), each with a real hidden payload
+blended into otherwise-normal content, and click "Simulate agent visiting
+this page." That fires a genuine `POST /screen` call against the hidden
+payload — not a scripted fake result — and shows Aegis intercepting it
+before a real agent would have acted on it.
+
 ## How you'd actually use this
 
 The live site is a demo for *exploring* what Aegis does — in a real product,

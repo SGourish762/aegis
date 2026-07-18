@@ -40,6 +40,14 @@ export default function Dashboard({ refreshKey }: { refreshKey: number }) {
     count,
   }));
 
+  const tooltipStyle = {
+    background: "var(--bg-raised)",
+    border: "1px solid var(--border-strong)",
+    borderRadius: 8,
+    fontSize: 13,
+    color: "var(--text)",
+  };
+
   return (
     <section className="card">
       <h2>Dashboard</h2>
@@ -61,9 +69,9 @@ export default function Dashboard({ refreshKey }: { refreshKey: number }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" stroke="var(--muted)" fontSize={12} />
                 <YAxis allowDecimals={false} stroke="var(--muted)" fontSize={12} />
-                <Tooltip />
-                <Line type="monotone" dataKey="count" name="Total" stroke="#57606a" strokeWidth={2} />
-                <Line type="monotone" dataKey="blocked" name="Blocked" stroke="#cf222e" strokeWidth={2} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="count" name="Total" stroke="var(--text-dim)" strokeWidth={2} />
+                <Line type="monotone" dataKey="blocked" name="Blocked" stroke="var(--danger)" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -79,8 +87,8 @@ export default function Dashboard({ refreshKey }: { refreshKey: number }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis type="number" allowDecimals={false} stroke="var(--muted)" fontSize={12} />
                 <YAxis dataKey="category" type="category" width={140} stroke="var(--muted)" fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#0969da" radius={[0, 3, 3, 0]} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="count" fill="var(--accent)" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
