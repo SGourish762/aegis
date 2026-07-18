@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/SGourish762/aegis/actions/workflows/ci.yml/badge.svg)](https://github.com/SGourish762/aegis/actions/workflows/ci.yml)
 
-**Live demo:** [aegis-ten-delta.vercel.app](https://aegis-ten-delta.vercel.app)
+**Live demo:** [aegis-bastion.vercel.app](https://aegis-bastion.vercel.app)
 (frontend, Vercel) · [aegis-4en8.onrender.com](https://aegis-4en8.onrender.com)
 (API, Render free tier — the first request after idle time can take ~50s to
 wake up).
